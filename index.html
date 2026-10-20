@@ -146,7 +146,7 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
           </div>
         </section>
 
-        <div class="strip">Card <span id="pos">1</span> of 20</div>
+        <div class="strip">Card <span id="pos">1</span> of <span id="total">20</span></div>
 
         <div id="game" class="scene">
           <div class="card" id="card">
@@ -188,6 +188,7 @@ const SOUPS=[
  ["Split pea with ham","boy",5],["Canned chicken noodle","boy",6],["Gumbo","boy",7],["Ramen with a soft egg","boy",8],
  ["Pozole","boy",9],["Hamburger soup","boy",10]
 ];
+const PER_SIDE=10; // each game deals this many girl soups and this many boy soups
 const DEFAULT_NAMES=["Partner 1","Partner 2"];
 const PREFIX="girlsoupboysoup-"; // namespaces our room ids on the shared PeerJS server
 const ID_CHARS="abcdefghjkmnpqrstuvwxyz23456789";
@@ -212,7 +213,10 @@ const stateKey=()=>mode==="local"?"bsgs-local":mode==="host"?"bsgs-state-"+roomI
 
 function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a}
 function newId(){const r=crypto.getRandomValues(new Uint8Array(6));return Array.from(r,b=>ID_CHARS[b%ID_CHARS.length]).join("")}
-function fresh(names){return{order:shuffle(SOUPS.map((_,k)=>k)),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
+// The dealt cards travel in the game state, so both phones show the same soups even if one has an older copy of the page.
+function deal(){return shuffle(["girl","boy"].flatMap(k=>shuffle(SOUPS.filter(x=>x[1]===k)).slice(0,PER_SIDE)))}
+const valid=g=>g&&Array.isArray(g.deck)&&g.deck.length?g:null;
+function fresh(names){return{deck:deal(),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
 
 /* ---------- game state (runs on the host, or on the single phone in local mode) ---------- */
 
@@ -224,7 +228,7 @@ function act(a){
     if(S.picks[0]&&S.picks[1])revealTimer=setTimeout(reveal,reduce?0:350); // brief pause so the second pick registers
   }else if(a.t==="next"){
     if(!S.flipped||S.done||a.i!==S.i||a.gen!==S.gen)return; // both pressing Next at once only advances one card
-    if(S.i<S.order.length-1){S.i++;S.picks=[null,null];S.flipped=false}else S.done=true;
+    if(S.i<S.deck.length-1){S.i++;S.picks=[null,null];S.flipped=false}else S.done=true;
   }else if(a.t==="restart"){
     clearTimeout(revealTimer);S=fresh(S.names);
   }else if(a.t==="name"){
@@ -235,7 +239,7 @@ function act(a){
 
 function reveal(){
   if(S.flipped)return;
-  const kind=SOUPS[S.order[S.i]][1];
+  const kind=S.deck[S.i][1];
   for(const p of [0,1])if(S.picks[p]){S.tries[p]++;if(S.picks[p]===kind)S.right[p]++}
   S.flipped=true;
   commit();
@@ -282,7 +286,12 @@ function hostPeer(){
 
 function fromGuest(d){
   if(!d||typeof d!=="object")return;
-  if(d.t==="hello"||d.t==="name")act({t:"name",p:1,v:d.t==="hello"?d.name:d.v});
+  if(d.t==="hello"){
+    // A partner who never set a name keeps whatever the host already called them.
+    const v=String(d.name||"").trim();
+    if(v&&v!==DEFAULT_NAMES[1])act({t:"name",p:1,v});else commit();
+  }
+  else if(d.t==="name")act({t:"name",p:1,v:d.v});
   else if(d.t==="pick"&&(d.g==="girl"||d.g==="boy"))act({t:"pick",p:1,g:d.g,i:d.i,gen:d.gen});
   else if(d.t==="next")act({t:"next",i:d.i,gen:d.gen});
   else if(d.t==="restart")act({t:"restart"});
@@ -313,7 +322,12 @@ function connect(){
     clearTimeout(openTimer);conn=c;connected=true;err="";
     c.send({t:"hello",name:savedName(1)});render();
   });
-  c.on("data",d=>{if(d&&d.t==="state"&&d.s){S=d.s;render()}});
+  c.on("data",d=>{
+    if(!d||d.t!=="state"||!d.s)return;
+    S=d.s;
+    if(document.activeElement!==$("name1"))store.set("soupname1",S.names[1]); // keep a rename from the host when rejoining
+    render();
+  });
   c.on("close",()=>{if(c===conn){conn=null;connected=false;render();retryTimer=setTimeout(connect,2000)}});
 }
 
@@ -333,17 +347,17 @@ function render(){
   if(!S)return;
 
   for(const p of [0,1]){
-    const inp=$("name"+p),mine=mode==="local"||p===me;
+    const inp=$("name"+p);
     if(document.activeElement!==inp)inp.value=S.names[p];
-    inp.readOnly=!mine;
+    inp.readOnly=mode==="guest"&&p!==me; // the room creator can rename both of you
     $("tag"+p).textContent=mode==="local"?"":p===me?"You":"Partner";
     $("pl"+p).classList.toggle("me",mode!=="local"&&p===me);
     $("s"+p).textContent=S.right[p];
     $("c"+p).textContent=S.right[p]+" of "+S.tries[p]+" right";
   }
-  $("pos").textContent=S.i+1;
+  $("pos").textContent=S.i+1;$("total").textContent=S.deck.length;
 
-  const [name,kind,rank]=SOUPS[S.order[S.i]];
+  const [name,kind,rank]=S.deck[S.i];
   if(S.gen!==shown.gen||S.i!==shown.i){
     $("card").classList.remove("flipped");$("soup").textContent=name;
     clearTimeout(backTimer);
@@ -367,7 +381,7 @@ function render(){
 }
 
 function fillBack(){
-  const [name,kind,rank]=SOUPS[S.order[S.i]];
+  const [name,kind,rank]=S.deck[S.i];
   $("back").className="face back "+kind;
   $("rank").textContent="#"+rank;
   $("kind").textContent=kind==="girl"?"Girl soup":"Boy soup";
@@ -405,7 +419,7 @@ function renderActions(){
     const mine=mode==="local"||p===me,who='<span class="who">'+esc(nm(p))+'</span>';
     if(mine||S.flipped)return '<div class="grow">'+who+btn(p,"girl",mine)+btn(p,"boy",mine)+'</div>';
     return '<div class="grow">'+who+'<span class="wait'+(S.picks[p]?' in':'')+'">'+(S.picks[p]?"Locked in ✓":"Thinking…")+'</span></div>';
-  }).join("")+(S.flipped?'<button class="btn next" id="nx">'+(S.i===S.order.length-1?"See who won":"Next soup")+'</button>':"");
+  }).join("")+(S.flipped?'<button class="btn next" id="nx">'+(S.i===S.deck.length-1?"See who won":"Next soup")+'</button>':"");
   document.querySelectorAll(".pick:not(:disabled)").forEach(b=>b.onclick=()=>send({t:"pick",p:+b.dataset.p,g:b.dataset.g,i:S.i,gen:S.gen}));
   if(S.flipped){$("nx").onclick=()=>send({t:"next",i:S.i,gen:S.gen});$("nx").focus({preventScroll:true})}
 }
@@ -413,12 +427,13 @@ function renderActions(){
 /* ---------- controls ---------- */
 
 for(const p of [0,1])$("name"+p).addEventListener("input",()=>{
-  if(!S||(mode!=="local"&&p!==me))return;
+  if(!S||(mode==="guest"&&p!==me))return;
   const v=$("name"+p).value;
   store.set("soupname"+p,v);
   if(mode==="guest"){S.names[p]=v;render();if(connected)conn.send({t:"name",v})}
   else act({t:"name",p,v});
 });
+for(const p of [0,1])$("name"+p).addEventListener("blur",()=>{if(S)$("name"+p).value=S.names[p]}); // catch up on a rename that arrived while typing
 
 async function share(){
   const url=roomLink();
@@ -441,7 +456,7 @@ $("create").onclick=()=>{
 };
 $("solo").onclick=()=>{
   mode="local";me=null;
-  S=store.get("bsgs-local")||fresh([savedName(0),savedName(1)]);
+  S=valid(store.get("bsgs-local"))||fresh([savedName(0),savedName(1)]);
   render();
 };
 $("leave").onclick=()=>{
@@ -468,7 +483,7 @@ const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
 if(ROOM_RE.test(r)){
   roomId=r;
   if(store.get("bsgs-host")===r){
-    mode="host";me=0;S=store.get("bsgs-state-"+r)||fresh([savedName(0),savedName(1)]);hostPeer();
+    mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh([savedName(0),savedName(1)]);hostPeer();
   }else{mode="guest";me=1;guestPeer()}
 }
 render();
