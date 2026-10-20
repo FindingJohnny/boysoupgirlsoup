@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Girl Soup, Boy Soup</title>
+<meta name="description" content="A two-player guessing game: is it a girl soup or a boy soup?">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Figtree:wght@400;600;800&family=DM+Mono:wght@500&display=swap">
+<style>
+/* Layout: one centered column — room bar, two scoreboards, flip card, one guess row per player. Diner-menu card on a porcelain-bowl ground. */
+:root{
+  --bg:#eef1f4; --card:#ffffff; --ink:#1d2430; --muted:#66707f; --line:#d6dce4;
+  --girl:#d9577a; --girl-soft:#fbe3ea; --boy:#2f557f; --boy-soft:#dfe8f3;
+  --good:#2f8a55; --bad:#c2452d; --wait:#c08a1e;
+  --display:"Shrikhand",Georgia,serif; --body:"Figtree",system-ui,sans-serif; --mono:"DM Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14181e; --card:#1f252e; --ink:#eef1f5; --muted:#9aa4b2; --line:#323a46;
+  --girl:#f07f9e; --girl-soft:#3a2229; --boy:#7fa7d6; --boy-soft:#1e2a3a; --good:#5cc086; --bad:#ef7a62; --wait:#e2b04a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14181e; --card:#1f252e; --ink:#eef1f5; --muted:#9aa4b2; --line:#323a46;
+  --girl:#f07f9e; --girl-soft:#3a2229; --boy:#7fa7d6; --boy-soft:#1e2a3a; --good:#5cc086; --bad:#ef7a62; --wait:#e2b04a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(20px,env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}
+.wrap{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+section{display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:400;font-size:2rem;line-height:1.05;margin:0;text-align:center;text-wrap:balance}
+h1 .g{color:var(--girl)} h1 .b{color:var(--boy)}
+
+.home{text-align:center;padding:28px 20px;background:var(--card);border:2px solid var(--line);border-radius:22px;gap:12px}
+.home p{margin:0 0 8px;color:var(--muted);line-height:1.45}
+
+.room{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 8px 8px 12px;font-size:.9rem;font-weight:600}
+.room #status{flex:1;min-width:0}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wait)}
+.dot.on{background:var(--good)} .dot.err{background:var(--bad)}
+.btn.mini{padding:6px 12px;font-size:.85rem;border-radius:10px;background:var(--ink);color:var(--bg)}
+
+.players{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.player{min-width:0;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.player.me{border-color:var(--ink)}
+.player .tag{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;min-height:1.1em}
+.player input{font:800 1rem var(--body);color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;width:100%;min-width:0}
+.player input[readonly]{border-bottom-color:transparent}
+.player input:focus{outline:none;border-bottom-color:var(--ink)}
+.player .pts{font-family:var(--mono);font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.player .sub{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.strip{text-align:center;font-family:var(--mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.scene{perspective:1100px}
+.card{position:relative;width:100%;aspect-ratio:5/4;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+.card.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:22px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;
+  background:var(--card);border:2px solid var(--line);box-shadow:0 10px 30px rgba(20,30,45,.08)}
+.front .label{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.front .soup{font-family:var(--display);font-size:clamp(1.7rem,7vw,2.3rem);line-height:1.1;text-wrap:balance}
+.front .hint{font-size:.85rem;color:var(--muted)}
+.back{transform:rotateY(180deg)}
+.back.girl{background:var(--girl-soft);border-color:var(--girl)}
+.back.boy{background:var(--boy-soft);border-color:var(--boy)}
+.back .rank{font-family:var(--mono);font-size:3.2rem;line-height:1}
+.back .kind{font-family:var(--display);font-size:2rem}
+.back.girl .rank,.back.girl .kind{color:var(--girl)}
+.back.boy .rank,.back.boy .kind{color:var(--boy)}
+.back .soupname{font-size:.95rem;color:var(--muted)}
+.verdicts{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-weight:800;font-size:.9rem;min-height:1.2em}
+.ok{color:var(--good)} .no{color:var(--bad)} .skip{color:var(--muted)}
+
+.lobby{text-align:center;padding:20px;background:var(--card);border:2px dashed var(--ink);border-radius:22px;gap:10px}
+.lobby h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
+.lobby p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.4}
+.linkbox{font:500 .85rem var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;text-align:center}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.guesses{display:flex;flex-direction:column;gap:10px}
+.grow{display:grid;grid-template-columns:minmax(0,5.5em) 1fr 1fr;gap:8px;align-items:center}
+.grow .who{font-weight:800;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grow .wait{grid-column:span 2;text-align:center;border:2px dashed var(--line);border-radius:14px;padding:12px 8px;color:var(--muted);font-weight:600}
+.grow .wait.in{border-style:solid;border-color:var(--good);color:var(--good)}
+button.btn{font:800 1rem var(--body);border-radius:14px;padding:14px 8px;cursor:pointer;border:2px solid transparent;transition:transform .1s,background .15s,color .15s}
+button.btn:active{transform:scale(.97)}
+button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.pick.girl{color:var(--girl);border-color:var(--girl);background:var(--card)}
+.pick.boy{color:var(--boy);border-color:var(--boy);background:var(--card)}
+.pick.girl.on{background:var(--girl);color:#fff}
+.pick.boy.on{background:var(--boy);color:#fff}
+.pick:disabled{cursor:default}
+.btn.next{width:100%;background:var(--ink);color:var(--bg)}
+.btn.ghost{background:transparent;color:var(--muted);border-color:var(--line);font-weight:600;font-size:.9rem;padding:10px 14px}
+.end{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;padding:28px 20px;background:var(--card);border:2px solid var(--line);border-radius:22px}
+.end .big{font-family:var(--display);font-size:2.4rem;line-height:1.1;text-wrap:balance;overflow-wrap:anywhere}
+.end p{margin:0;color:var(--muted)}
+.foot{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="g">Girl Soup</span>, <span class="b">Boy Soup</span></h1>
+
+  <section class="home" id="home" hidden>
+    <p>Twenty soups. Each of you guesses on your own phone, then the card flips and shows who got it right.</p>
+    <button class="btn next" id="create">Create a room</button>
+    <button class="btn ghost" id="solo">Play on one phone instead</button>
+  </section>
+
+  <section id="play" hidden>
+    <div class="room" id="room">
+      <span class="dot" id="dot"></span><span id="status"></span>
+      <button class="btn mini" id="invite" hidden>Invite</button>
+      <button class="btn mini" id="retry" hidden>Retry</button>
+    </div>
+
+    <div id="board">
+      <section>
+        <div class="players">
+          <div class="player" id="pl0">
+            <div class="tag" id="tag0"></div>
+            <input id="name0" aria-label="Player 1 name" maxlength="16">
+            <div class="pts" id="s0">0</div>
+            <div class="sub" id="c0">0 of 0 right</div>
+          </div>
+          <div class="player" id="pl1">
+            <div class="tag" id="tag1"></div>
+            <input id="name1" aria-label="Player 2 name" maxlength="16">
+            <div class="pts" id="s1">0</div>
+            <div class="sub" id="c1">0 of 0 right</div>
+          </div>
+        </div>
+
+        <section class="lobby" id="lobby" hidden>
+          <h2>Invite your partner</h2>
+          <p>Send them this link. The game starts as soon as they open it. Keep this page open while you play.</p>
+          <input class="linkbox" id="link" readonly aria-label="Room link">
+          <div class="two">
+            <button class="btn next" id="share">Share link</button>
+            <button class="btn ghost" id="copy">Copy</button>
+          </div>
+        </section>
+
+        <div class="strip">Card <span id="pos">1</span> of 20</div>
+
+        <div id="game" class="scene">
+          <div class="card" id="card">
+            <div class="face front">
+              <div class="label">Both of you guess</div>
+              <div class="soup" id="soup"></div>
+              <div class="hint">Flips once you've both picked</div>
+            </div>
+            <div class="face back" id="back">
+              <div class="rank" id="rank"></div>
+              <div class="kind" id="kind"></div>
+              <div class="soupname" id="soupname"></div>
+              <div class="verdicts" id="verdicts" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="end" id="end" hidden><div class="big" id="endhead"></div><p id="endmsg"></p></div>
+
+
+        <div class="guesses" id="actions"></div>
+      </section>
+    </div>
+
+    <div class="foot">
+      <button class="btn ghost" id="restart">Shuffle and restart</button>
+      <button class="btn ghost" id="leave">Leave</button>
+    </div>
+  </section>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const SOUPS=[
+ ["Tomato bisque","girl",1],["Lobster bisque","girl",2],["Butternut squash","girl",3],["Broccoli cheddar","girl",4],
+ ["French onion","girl",5],["Potato leek","girl",6],["Lemony chicken orzo","girl",7],["Carrot ginger","girl",8],
+ ["Wild mushroom","girl",9],["Pho with extra herbs","girl",10],
+ ["Chili","boy",1],["Beef stew","boy",2],["Loaded baked potato","boy",3],["Clam chowder","boy",4],
+ ["Split pea with ham","boy",5],["Canned chicken noodle","boy",6],["Gumbo","boy",7],["Ramen with a soft egg","boy",8],
+ ["Pozole","boy",9],["Hamburger soup","boy",10]
+];
+const DEFAULT_NAMES=["Husband","Wife"];
+const PREFIX="girlsoupboysoup-"; // namespaces our room ids on the shared PeerJS server
+const ID_CHARS="abcdefghjkmnpqrstuvwxyz23456789";
+const ROOM_RE=/^[a-z0-9]{6}$/;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store={
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+  del(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+
+// mode: null (home), "local" (one phone, both rows), "host" (player 1, owns the game state), "guest" (player 2)
+let mode=null,me=null,S=null,roomId=null,peer=null,conn=null,connected=false,err="";
+let revealTimer,backTimer,retryTimer,openTimer,shown={gen:-1,i:-1,flipped:false};
+
+const nm=p=>(S&&S.names[p]||"").trim()||("Player "+(p+1));
+const savedName=p=>store.get("soupname"+p)||DEFAULT_NAMES[p];
+const roomLink=()=>location.origin+location.pathname+"?room="+roomId;
+const stateKey=()=>mode==="local"?"bsgs-local":mode==="host"?"bsgs-state-"+roomId:null;
+
+function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a}
+function newId(){const r=crypto.getRandomValues(new Uint8Array(6));return Array.from(r,b=>ID_CHARS[b%ID_CHARS.length]).join("")}
+function fresh(names){return{order:shuffle(SOUPS.map((_,k)=>k)),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
+
+/* ---------- game state (runs on the host, or on the single phone in local mode) ---------- */
+
+function act(a){
+  if(a.t==="pick"){
+    if(S.flipped||S.done||a.i!==S.i||a.gen!==S.gen)return;
+    S.picks[a.p]=a.g;
+    clearTimeout(revealTimer);
+    if(S.picks[0]&&S.picks[1])revealTimer=setTimeout(reveal,reduce?0:350); // brief pause so the second pick registers
+  }else if(a.t==="next"){
+    if(!S.flipped||S.done||a.i!==S.i||a.gen!==S.gen)return; // both pressing Next at once only advances one card
+    if(S.i<S.order.length-1){S.i++;S.picks=[null,null];S.flipped=false}else S.done=true;
+  }else if(a.t==="restart"){
+    clearTimeout(revealTimer);S=fresh(S.names);
+  }else if(a.t==="name"){
+    S.names[a.p]=String(a.v).slice(0,16);
+  }
+  commit();
+}
+
+function reveal(){
+  if(S.flipped)return;
+  const kind=SOUPS[S.order[S.i]][1];
+  for(const p of [0,1])if(S.picks[p]){S.tries[p]++;if(S.picks[p]===kind)S.right[p]++}
+  S.flipped=true;
+  commit();
+}
+
+function commit(){
+  const k=stateKey();if(k)store.set(k,S);
+  if(mode==="host"&&connected)conn.send({t:"state",s:S});
+  render();
+}
+
+// Every button press goes through here: the guest forwards it to the host, everyone else applies it.
+function send(a){
+  if(mode!=="guest")return act(a);
+  if(a.t==="pick"){S.picks[me]=a.g;render()} // show my pick right away; the host's next state confirms it
+  if(connected)conn.send(a);
+}
+
+/* ---------- networking (PeerJS: WebRTC with a free public matchmaking server) ---------- */
+
+function hostPeer(){
+  if(!window.Peer){err="Couldn't load the multiplayer library. Check your connection and reload.";return render()}
+  peer=new Peer(PREFIX+roomId);
+  peer.on("open",()=>{err="";render()});
+  peer.on("connection",c=>{
+    c.on("open",()=>{
+      if(conn&&conn!==c)conn.close(); // a fresh join (say, after a reload) replaces the old one
+      conn=c;connected=true;c.send({t:"state",s:S});render();
+    });
+    c.on("data",d=>{if(c===conn)fromGuest(d)});
+    c.on("close",()=>{if(c===conn){conn=null;connected=false;render()}});
+  });
+  peer.on("disconnected",()=>setTimeout(()=>{if(peer&&!peer.destroyed&&peer.disconnected)peer.reconnect()},1500));
+  peer.on("error",e=>{
+    if(e.type==="unavailable-id"){
+      // The server still holds this room from before a reload; it lets go within a few seconds.
+      err="Reopening your room…";peer.destroy();retryTimer=setTimeout(hostPeer,3000);
+    }else if(e.type==="network"||e.type==="server-error"||e.type==="socket-error"||e.type==="socket-closed"){
+      err="Can't reach the server. Retrying…";
+    }else err="Connection problem ("+e.type+").";
+    render();
+  });
+}
+
+function fromGuest(d){
+  if(!d||typeof d!=="object")return;
+  if(d.t==="hello"||d.t==="name")act({t:"name",p:1,v:d.t==="hello"?d.name:d.v});
+  else if(d.t==="pick"&&(d.g==="girl"||d.g==="boy"))act({t:"pick",p:1,g:d.g,i:d.i,gen:d.gen});
+  else if(d.t==="next")act({t:"next",i:d.i,gen:d.gen});
+  else if(d.t==="restart")act({t:"restart"});
+}
+
+function guestPeer(){
+  if(!window.Peer){err="Couldn't load the multiplayer library. Check your connection and reload.";return render()}
+  peer=new Peer();
+  peer.on("open",connect);
+  peer.on("disconnected",()=>setTimeout(()=>{if(peer&&!peer.destroyed&&peer.disconnected)peer.reconnect()},1500));
+  peer.on("error",e=>{
+    if(e.type==="peer-unavailable"){
+      err="Can't find this room yet. Ask your partner to open the game. Still trying…";
+      clearTimeout(retryTimer);retryTimer=setTimeout(connect,4000);
+    }else if(e.type==="network"||e.type==="server-error"||e.type==="socket-error"||e.type==="socket-closed"){
+      err="Can't reach the server. Retrying…";
+    }else err="Connection problem ("+e.type+").";
+    render();
+  });
+}
+
+function connect(){
+  clearTimeout(retryTimer);clearTimeout(openTimer);
+  if(!peer||peer.destroyed||peer.disconnected||connected)return;
+  const c=peer.connect(PREFIX+roomId,{reliable:true});
+  openTimer=setTimeout(()=>{if(!c.open){c.close();err="Still trying to connect…";render();connect()}},15000);
+  c.on("open",()=>{
+    clearTimeout(openTimer);conn=c;connected=true;err="";
+    c.send({t:"hello",name:savedName(1)});render();
+  });
+  c.on("data",d=>{if(d&&d.t==="state"&&d.s){S=d.s;render()}});
+  c.on("close",()=>{if(c===conn){conn=null;connected=false;render();retryTimer=setTimeout(connect,2000)}});
+}
+
+function stopPeer(){
+  clearTimeout(retryTimer);clearTimeout(openTimer);
+  if(peer)peer.destroy();
+  peer=null;conn=null;connected=false;err="";
+}
+
+/* ---------- rendering ---------- */
+
+function render(){
+  $("home").hidden=!!mode;$("play").hidden=!mode;
+  if(!mode)return;
+  renderRoom();
+  $("board").hidden=!S;
+  if(!S)return;
+
+  for(const p of [0,1]){
+    const inp=$("name"+p),mine=mode==="local"||p===me;
+    if(document.activeElement!==inp)inp.value=S.names[p];
+    inp.readOnly=!mine;
+    $("tag"+p).textContent=mode==="local"?"":p===me?"You":"Partner";
+    $("pl"+p).classList.toggle("me",mode!=="local"&&p===me);
+    $("s"+p).textContent=S.right[p];
+    $("c"+p).textContent=S.right[p]+" of "+S.tries[p]+" right";
+  }
+  $("pos").textContent=S.i+1;
+
+  const [name,kind,rank]=SOUPS[S.order[S.i]];
+  if(S.gen!==shown.gen||S.i!==shown.i){
+    $("card").classList.remove("flipped");$("soup").textContent=name;
+    clearTimeout(backTimer);
+    if(!S.flipped)backTimer=setTimeout(fillBack,shown.flipped&&!reduce?280:0); // wait until the old answer has turned away
+  }
+  if(S.flipped){clearTimeout(backTimer);fillBack();$("card").classList.add("flipped")}
+  shown={gen:S.gen,i:S.i,flipped:S.flipped};
+
+  $("game").hidden=S.done;$("end").hidden=!S.done;
+  if(S.done){
+    const [a,b]=S.right;
+    $("endhead").textContent=a===b?"It's a tie":nm(a>b?0:1)+" wins";
+    $("endmsg").textContent=a===b?"Equal soup wisdom. Settle it with a rematch.":"Final score "+Math.max(a,b)+" to "+Math.min(a,b)+".";
+  }
+
+  const waiting=mode!=="local"&&!connected;
+  $("lobby").hidden=!(mode==="host"&&waiting);
+  $("link").value=roomId?roomLink():"";
+  $("actions").hidden=waiting;
+  if(!waiting)renderActions();
+}
+
+function fillBack(){
+  const [name,kind,rank]=SOUPS[S.order[S.i]];
+  $("back").className="face back "+kind;
+  $("rank").textContent="#"+rank;
+  $("kind").textContent=kind==="girl"?"Girl soup":"Boy soup";
+  $("soupname").textContent=name;
+  $("verdicts").innerHTML=!S.flipped?"":[0,1].map(p=>{
+    if(!S.picks[p])return '<span class="skip">'+esc(nm(p))+' passed</span>';
+    const ok=S.picks[p]===kind;
+    return '<span class="'+(ok?"ok":"no")+'">'+esc(nm(p))+(ok?" ✓":" ✗")+'</span>';
+  }).join("");
+}
+
+function renderRoom(){
+  const online=mode!=="local";
+  $("room").hidden=!online;
+  if(!online)return;
+  let text,cls="";
+  if(connected){text="Playing with "+nm(1-me);cls="on"}
+  else if(err){text=err;cls=/problem|Couldn't/.test(err)?"err":""}
+  else if(mode==="host")text=peer&&peer.open?"Room open. Waiting for your partner…":"Opening your room…";
+  else text="Joining your partner's room…";
+  $("status").textContent=text;$("dot").className="dot "+cls;
+  $("invite").hidden=mode!=="host";
+  $("retry").hidden=!(mode==="guest"&&!connected);
+}
+
+function renderActions(){
+  if(S.done){
+    $("actions").innerHTML='<button class="btn next" id="again">Rematch</button>';
+    $("again").onclick=()=>send({t:"restart"});
+    return;
+  }
+  const rows=mode==="local"?[0,1]:[me,1-me];
+  const btn=(p,g,mine)=>'<button class="btn pick '+g+(S.picks[p]===g&&(mine||S.flipped)?" on":"")+'" data-p="'+p+'" data-g="'+g+'"'+(S.flipped||!mine?" disabled":"")+'>'+(g==="girl"?"Girl":"Boy")+'</button>';
+  $("actions").innerHTML=rows.map(p=>{
+    const mine=mode==="local"||p===me,who='<span class="who">'+esc(nm(p))+'</span>';
+    if(mine||S.flipped)return '<div class="grow">'+who+btn(p,"girl",mine)+btn(p,"boy",mine)+'</div>';
+    return '<div class="grow">'+who+'<span class="wait'+(S.picks[p]?' in':'')+'">'+(S.picks[p]?"Locked in ✓":"Thinking…")+'</span></div>';
+  }).join("")+(S.flipped?'<button class="btn next" id="nx">'+(S.i===S.order.length-1?"See who won":"Next soup")+'</button>':"");
+  document.querySelectorAll(".pick:not(:disabled)").forEach(b=>b.onclick=()=>send({t:"pick",p:+b.dataset.p,g:b.dataset.g,i:S.i,gen:S.gen}));
+  if(S.flipped){$("nx").onclick=()=>send({t:"next",i:S.i,gen:S.gen});$("nx").focus({preventScroll:true})}
+}
+
+/* ---------- controls ---------- */
+
+for(const p of [0,1])$("name"+p).addEventListener("input",()=>{
+  if(!S||(mode!=="local"&&p!==me))return;
+  const v=$("name"+p).value;
+  store.set("soupname"+p,v);
+  if(mode==="guest"){S.names[p]=v;render();if(connected)conn.send({t:"name",v})}
+  else act({t:"name",p,v});
+});
+
+async function share(){
+  const url=roomLink();
+  if(navigator.share){try{await navigator.share({title:"Girl Soup, Boy Soup",text:"Come play Girl Soup, Boy Soup with me!",url});return}catch(e){if(e.name==="AbortError")return}}
+  copy();
+}
+async function copy(){
+  const b=$("copy");
+  try{await navigator.clipboard.writeText(roomLink());b.textContent="Copied!"}
+  catch(e){$("link").select();b.textContent="Select and copy"}
+  setTimeout(()=>b.textContent="Copy",1800);
+}
+
+$("create").onclick=()=>{
+  roomId=newId();mode="host";me=0;S=null;
+  S=fresh([savedName(0),savedName(1)]);
+  store.set("bsgs-host",roomId);store.set("bsgs-state-"+roomId,S);
+  history.replaceState(null,"","?room="+roomId);
+  hostPeer();render();
+};
+$("solo").onclick=()=>{
+  mode="local";me=null;
+  S=store.get("bsgs-local")||fresh([savedName(0),savedName(1)]);
+  render();
+};
+$("leave").onclick=()=>{
+  if(mode==="host"){store.del("bsgs-host");store.del("bsgs-state-"+roomId)}
+  stopPeer();mode=null;me=null;S=null;roomId=null;shown={gen:-1,i:-1,flipped:false};
+  history.replaceState(null,"",location.pathname);
+  render();
+};
+$("restart").onclick=()=>send({t:"restart"});
+$("share").onclick=share;$("invite").onclick=share;$("copy").onclick=copy;
+$("retry").onclick=()=>{stopPeer();guestPeer();render()};
+
+// Phones drop the connection when the screen locks; pick it back up when the page is visible again.
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden||!peer||mode==="local")return;
+  if(peer.destroyed){if(mode==="host")hostPeer();else guestPeer()}
+  else if(peer.disconnected)peer.reconnect();
+  else if(mode==="guest"&&!connected)connect();
+});
+
+/* ---------- start ---------- */
+
+const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
+if(ROOM_RE.test(r)){
+  roomId=r;
+  if(store.get("bsgs-host")===r){
+    mode="host";me=0;S=store.get("bsgs-state-"+r)||fresh([savedName(0),savedName(1)]);hostPeer();
+  }else{mode="guest";me=1;guestPeer()}
+}
+render();
+</script>
+</body>
+</html>
