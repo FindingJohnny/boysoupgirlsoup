@@ -180,13 +180,33 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const SOUPS=[
- ["Tomato bisque","girl",1],["Lobster bisque","girl",2],["Butternut squash","girl",3],["Broccoli cheddar","girl",4],
- ["French onion","girl",5],["Potato leek","girl",6],["Lemony chicken orzo","girl",7],["Carrot ginger","girl",8],
- ["Wild mushroom","girl",9],["Pho with extra herbs","girl",10],
- ["Chili","boy",1],["Beef stew","boy",2],["Loaded baked potato","boy",3],["Clam chowder","boy",4],
- ["Split pea with ham","boy",5],["Canned chicken noodle","boy",6],["Gumbo","boy",7],["Ramen with a soft egg","boy",8],
- ["Pozole","boy",9],["Hamburger soup","boy",10]
+const SOUPS=[ // ranked within each side: #1 is the most girl (or boy) soup there is
+ ["Bridal shower soup shooters","girl",1],["Tomato bisque","girl",2],["Soup with edible flowers","girl",3],
+ ["Gazpacho","girl",4],["Lobster bisque","girl",5],["Butternut squash","girl",6],["Spring pea and mint","girl",7],
+ ["Carrot ginger","girl",8],["Cup of soup, half a sandwich","girl",9],["Cream of asparagus","girl",10],
+ ["Roasted red pepper","girl",11],["Marry me chicken soup","girl",12],["Broccoli cheddar","girl",13],
+ ["Turmeric ginger broth","girl",14],["Potato leek","girl",15],["Lemony chicken orzo","girl",16],
+ ["Roasted cauliflower","girl",17],["Sweet potato coconut curry","girl",18],["Tom kha (coconut chicken)","girl",19],
+ ["Wild mushroom","girl",20],["Chicken pastina","girl",21],["Miso soup","girl",22],["Chicken gnocchi","girl",23],
+ ["Creamy chicken and wild rice","girl",24],["French onion","girl",25],["Tuscan white bean and kale","girl",26],
+ ["Soup dumplings","girl",27],["Minestrone","girl",28],["Pho with extra herbs","girl",29],["She-crab soup","girl",30],
+ ["Brothy beans with parm rind","girl",31],["Summer corn chowder","girl",32],["Red lentil soup","girl",33],
+ ["Creamy tortellini","girl",34],["Egg drop soup","girl",35],["Garden vegetable","girl",36],
+ ["Hibachi clear soup","girl",37],["Bone broth in a mug","girl",38],["Wonton soup","girl",39],["Borscht","girl",40],
+ ["Dill pickle soup","girl",41],["Matzo ball soup","girl",42],["Italian wedding soup","girl",43],
+ ["Lasagna soup","girl",44],["White chicken chili","girl",45],
+ ["Chili","boy",1],["Chunky soup from the can","boy",2],["Beef stew","boy",3],["Hunting camp venison stew","boy",4],
+ ["Loaded baked potato","boy",5],["Beer cheese with pretzels","boy",6],["Thermos of beef barley","boy",7],
+ ["Crockpot taco soup","boy",8],["Hangover menudo","boy",9],["Buffalo chicken soup","boy",10],["Clam chowder","boy",11],
+ ["Cup noodles at 2am","boy",12],["Split pea with ham","boy",13],["Hamburger soup","boy",14],
+ ["Bean with bacon","boy",15],["Canned chicken noodle","boy",16],["Brunswick stew","boy",17],["Gumbo","boy",18],
+ ["Goulash","boy",19],["Steak soup","boy",20],["Kielbasa and cabbage","boy",21],["Birria consommé","boy",22],
+ ["Green chile stew","boy",23],["Vegetable beef","boy",24],["Pozole","boy",25],["Leftover turkey soup","boy",26],
+ ["Ramen with a soft egg","boy",27],["Oxtail soup","boy",28],["Hot and sour soup","boy",29],["Kimchi stew","boy",30],
+ ["Chicken and dumplings","boy",31],["Albondigas","boy",32],["Black bean soup","boy",33],["Turtle soup","boy",34],
+ ["Chicken tortilla","boy",35],["Maryland crab soup","boy",36],["Cioppino","boy",37],["Oyster stew","boy",38],
+ ["Stuffed pepper soup","boy",39],["Alphabet soup","boy",40],["Pasta e fagioli","boy",41],["Tom yum","boy",42],
+ ["Beef bourguignon","boy",43],["Zuppa Toscana","boy",44]
 ];
 const PER_SIDE=10; // each game deals this many girl soups and this many boy soups
 const DEFAULT_NAMES=["Partner 1","Partner 2"];

@@ -2,6 +2,7 @@
 
 A two-player guessing game: is it a girl soup or a boy soup?
 
+- Each game deals 10 girl soups and 10 boy soups from a list of about 90.
 - **Create a room**, then share the link with your partner. Each of you guesses on your own phone; the card flips once you've both picked.
 - **Play on one phone** if you're sitting together.
 
