@@ -124,13 +124,13 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
         <div class="players">
           <div class="player" id="pl0">
             <div class="tag" id="tag0"></div>
-            <input id="name0" aria-label="Player 1 name" maxlength="16">
+            <input id="name0" aria-label="Partner 1 name" maxlength="16">
             <div class="pts" id="s0">0</div>
             <div class="sub" id="c0">0 of 0 right</div>
           </div>
           <div class="player" id="pl1">
             <div class="tag" id="tag1"></div>
-            <input id="name1" aria-label="Player 2 name" maxlength="16">
+            <input id="name1" aria-label="Partner 2 name" maxlength="16">
             <div class="pts" id="s1">0</div>
             <div class="sub" id="c1">0 of 0 right</div>
           </div>
@@ -188,7 +188,7 @@ const SOUPS=[
  ["Split pea with ham","boy",5],["Canned chicken noodle","boy",6],["Gumbo","boy",7],["Ramen with a soft egg","boy",8],
  ["Pozole","boy",9],["Hamburger soup","boy",10]
 ];
-const DEFAULT_NAMES=["Husband","Wife"];
+const DEFAULT_NAMES=["Partner 1","Partner 2"];
 const PREFIX="girlsoupboysoup-"; // namespaces our room ids on the shared PeerJS server
 const ID_CHARS="abcdefghjkmnpqrstuvwxyz23456789";
 const ROOM_RE=/^[a-z0-9]{6}$/;
@@ -205,7 +205,7 @@ const store={
 let mode=null,me=null,S=null,roomId=null,peer=null,conn=null,connected=false,err="";
 let revealTimer,backTimer,retryTimer,openTimer,shown={gen:-1,i:-1,flipped:false};
 
-const nm=p=>(S&&S.names[p]||"").trim()||("Player "+(p+1));
+const nm=p=>(S&&S.names[p]||"").trim()||("Partner "+(p+1));
 const savedName=p=>store.get("soupname"+p)||DEFAULT_NAMES[p];
 const roomLink=()=>location.origin+location.pathname+"?room="+roomId;
 const stateKey=()=>mode==="local"?"bsgs-local":mode==="host"?"bsgs-state-"+roomId:null;
