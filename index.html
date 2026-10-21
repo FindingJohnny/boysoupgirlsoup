@@ -229,7 +229,6 @@ let mode=null,me=null,S=null,roomId=null,peer=null,conn=null,connected=false,err
 let revealTimer,backTimer,retryTimer,openTimer,shown={gen:-1,i:-1,flipped:false};
 
 const nm=p=>(S&&S.names[p]||"").trim()||("Partner "+(p+1));
-const savedName=p=>store.get("soupname"+p)||DEFAULT_NAMES[p];
 const roomLink=()=>location.origin+location.pathname+"?room="+roomId;
 // Rooms this browser created, newest first, so several rooms can run at once (one per tab).
 const hostedRooms=()=>{const h=store.get("bsgs-hosts")||[],old=store.get("bsgs-host");return old&&!h.includes(old)?[old,...h]:h};
@@ -246,7 +245,7 @@ function newId(){const r=crypto.getRandomValues(new Uint8Array(6));return Array.
 // The dealt cards travel in the game state, so both phones show the same soups even if one has an older copy of the page.
 function deal(){return shuffle(["girl","boy"].flatMap(k=>shuffle(SOUPS.filter(x=>x[1]===k)).slice(0,PER_SIDE)))}
 const valid=g=>g&&Array.isArray(g.deck)&&g.deck.length?g:null;
-function fresh(names){return{deck:deal(),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names,partnerNamed:!!(S&&S.partnerNamed)}}
+function fresh(names){return{deck:deal(),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
 
 /* ---------- game state (runs on the host, or on the single phone in local mode) ---------- */
 
@@ -262,7 +261,6 @@ function act(a){
   }else if(a.t==="restart"){
     clearTimeout(revealTimer);S=fresh(S.names);
   }else if(a.t==="name"){
-    if(a.byHost)S.partnerNamed=true; // the host's choice wins over the name the partner's phone brings
     S.names[a.p]=String(a.v).slice(0,16);
   }
   commit();
@@ -317,11 +315,7 @@ function hostPeer(){
 
 function fromGuest(d){
   if(!d||typeof d!=="object")return;
-  if(d.t==="hello"){
-    // A partner who never set a name keeps whatever the host already called them.
-    const v=String(d.name||"").trim();
-    if(v&&v!==DEFAULT_NAMES[1]&&!S.partnerNamed)act({t:"name",p:1,v});else commit();
-  }
+  if(d.t==="hello")commit();
   else if(d.t==="name")act({t:"name",p:1,v:d.v});
   else if(d.t==="pick"&&(d.g==="girl"||d.g==="boy"))act({t:"pick",p:1,g:d.g,i:d.i,gen:d.gen});
   else if(d.t==="next")act({t:"next",i:d.i,gen:d.gen});
@@ -351,13 +345,12 @@ function connect(){
   openTimer=setTimeout(()=>{if(!c.open){c.close();err="Still trying to connect…";render();connect()}},15000);
   c.on("open",()=>{
     clearTimeout(openTimer);conn=c;connected=true;err="";
-    c.send({t:"hello",name:savedName(1)});render();
+    c.send({t:"hello"});render();
   });
   c.on("data",d=>{
     if(!d||d.t!=="state"||!d.s)return;
     if(!Array.isArray(d.s.deck)){err="Your partner has an older version of the game. Ask them to reload the page.";render();return}
     S=d.s;
-    if(document.activeElement!==$("name1"))store.set("soupname1",S.names[1]); // keep a rename from the host when rejoining
     render();
   });
   c.on("close",()=>{if(c===conn){conn=null;connected=false;render();retryTimer=setTimeout(connect,2000)}});
@@ -461,9 +454,8 @@ function renderActions(){
 for(const p of [0,1])$("name"+p).addEventListener("input",()=>{
   if(!S||(mode==="guest"&&p!==me))return;
   const v=$("name"+p).value;
-  if(mode==="local"||p===me)store.set("soupname"+p,v); // remember your own name, not each room's partner
   if(mode==="guest"){S.names[p]=v;render();if(connected)conn.send({t:"name",v})}
-  else act({t:"name",p,v,byHost:mode==="host"&&p===1});
+  else act({t:"name",p,v});
 });
 for(const p of [0,1])$("name"+p).addEventListener("blur",()=>{if(S)$("name"+p).value=S.names[p]}); // catch up on a rename that arrived while typing
 
@@ -481,18 +473,19 @@ async function copy(){
 
 $("create").onclick=()=>{
   roomId=newId();mode="host";me=0;S=null;
-  S=fresh([savedName(0),DEFAULT_NAMES[1]]); // a new room is often a new partner
+  S=fresh(DEFAULT_NAMES.slice()); // names belong to a room; every new one starts as Partner 1 and Partner 2
   rememberRoom(roomId);store.set("bsgs-state-"+roomId,S);
   history.replaceState(null,"","?room="+roomId);
   hostPeer();render();
 };
 $("solo").onclick=()=>{
   mode="local";me=null;
-  S=valid(store.get("bsgs-local"))||fresh([savedName(0),savedName(1)]);
+  S=valid(store.get("bsgs-local"))||fresh(DEFAULT_NAMES.slice());
   render();
 };
 $("leave").onclick=()=>{
   if(mode==="host")forgetRoom(roomId);
+  if(mode==="local")store.del("bsgs-local");
   stopPeer();mode=null;me=null;S=null;roomId=null;shown={gen:-1,i:-1,flipped:false};
   history.replaceState(null,"",location.pathname);
   render();
@@ -529,11 +522,13 @@ if(!isNaN(built))$("ver").textContent="Updated "+built.toLocaleString([],{month:
 
 /* ---------- start ---------- */
 
+store.del("soupname0");store.del("soupname1"); // names saved by earlier versions
+
 const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
 if(ROOM_RE.test(r)){
   roomId=r;
   if(hostedRooms().includes(r)){
-    mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh([savedName(0),DEFAULT_NAMES[1]]);hostPeer();
+    mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh(DEFAULT_NAMES.slice());hostPeer();
   }else{mode="guest";me=1;guestPeer()}
 }
 render();
