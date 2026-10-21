@@ -246,7 +246,7 @@ function newId(){const r=crypto.getRandomValues(new Uint8Array(6));return Array.
 // The dealt cards travel in the game state, so both phones show the same soups even if one has an older copy of the page.
 function deal(){return shuffle(["girl","boy"].flatMap(k=>shuffle(SOUPS.filter(x=>x[1]===k)).slice(0,PER_SIDE)))}
 const valid=g=>g&&Array.isArray(g.deck)&&g.deck.length?g:null;
-function fresh(names){return{deck:deal(),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
+function fresh(names){return{deck:deal(),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names,partnerNamed:!!(S&&S.partnerNamed)}}
 
 /* ---------- game state (runs on the host, or on the single phone in local mode) ---------- */
 
@@ -262,6 +262,7 @@ function act(a){
   }else if(a.t==="restart"){
     clearTimeout(revealTimer);S=fresh(S.names);
   }else if(a.t==="name"){
+    if(a.byHost)S.partnerNamed=true; // the host's choice wins over the name the partner's phone brings
     S.names[a.p]=String(a.v).slice(0,16);
   }
   commit();
@@ -319,7 +320,7 @@ function fromGuest(d){
   if(d.t==="hello"){
     // A partner who never set a name keeps whatever the host already called them.
     const v=String(d.name||"").trim();
-    if(v&&v!==DEFAULT_NAMES[1])act({t:"name",p:1,v});else commit();
+    if(v&&v!==DEFAULT_NAMES[1]&&!S.partnerNamed)act({t:"name",p:1,v});else commit();
   }
   else if(d.t==="name")act({t:"name",p:1,v:d.v});
   else if(d.t==="pick"&&(d.g==="girl"||d.g==="boy"))act({t:"pick",p:1,g:d.g,i:d.i,gen:d.gen});
@@ -460,9 +461,9 @@ function renderActions(){
 for(const p of [0,1])$("name"+p).addEventListener("input",()=>{
   if(!S||(mode==="guest"&&p!==me))return;
   const v=$("name"+p).value;
-  store.set("soupname"+p,v);
+  if(mode==="local"||p===me)store.set("soupname"+p,v); // remember your own name, not each room's partner
   if(mode==="guest"){S.names[p]=v;render();if(connected)conn.send({t:"name",v})}
-  else act({t:"name",p,v});
+  else act({t:"name",p,v,byHost:mode==="host"&&p===1});
 });
 for(const p of [0,1])$("name"+p).addEventListener("blur",()=>{if(S)$("name"+p).value=S.names[p]}); // catch up on a rename that arrived while typing
 
@@ -480,7 +481,7 @@ async function copy(){
 
 $("create").onclick=()=>{
   roomId=newId();mode="host";me=0;S=null;
-  S=fresh([savedName(0),savedName(1)]);
+  S=fresh([savedName(0),DEFAULT_NAMES[1]]); // a new room is often a new partner
   rememberRoom(roomId);store.set("bsgs-state-"+roomId,S);
   history.replaceState(null,"","?room="+roomId);
   hostPeer();render();
@@ -532,7 +533,7 @@ const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
 if(ROOM_RE.test(r)){
   roomId=r;
   if(hostedRooms().includes(r)){
-    mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh([savedName(0),savedName(1)]);hostPeer();
+    mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh([savedName(0),DEFAULT_NAMES[1]]);hostPeer();
   }else{mode="guest";me=1;guestPeer()}
 }
 render();
