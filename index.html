@@ -610,7 +610,7 @@ function renderResults(){
   $("results").innerHTML='<h2>Every soup</h2><div class="rhead"><span></span><span></span><span>'+esc(nm(0))+'</span><span>'+esc(nm(1))+'</span></div>'+
     S.deck.map((e,k)=>{
       const pk=(S.log||[])[k]||[null,null],img=photo(e),w=wikiUrl(e);
-      return '<div class="rrow">'+(img?'<img class="thumb" loading="lazy" alt="" src="'+esc(img)+'">':'<span class="thumb"></span>')+
+      return '<div class="rrow">'+(img?'<img class="thumb" loading="lazy" alt="" onerror="this.style.visibility=\'hidden\'" src="'+esc(img)+'">':'<span class="thumb"></span>')+
         '<div><div class="rn">'+esc(e[0])+'</div><div class="ra '+e[1]+'">#'+e[2]+' '+(e[1]==="girl"?"Girl":"Boy")+' soup</div>'+
         '<div class="rl">'+(w?'<a href="'+esc(w)+'" target="_blank" rel="noopener">About</a> · ':'')+'<a href="'+esc(recipeUrl(e))+'" target="_blank" rel="noopener">Recipe</a></div></div>'+
         pickCell(e,pk[0])+pickCell(e,pk[1])+'</div>';
@@ -713,6 +713,9 @@ document.addEventListener("visibilitychange",()=>{
   else if(peer.disconnected)peer.reconnect();
   else if(mode==="guest"&&!connected)connect();
 });
+
+// A photo that fails to load falls back to the plain card.
+$("pic").addEventListener("error",()=>{$("pic").hidden=true;$("label").hidden=false});
 
 /* ---------- updates ---------- */
 
