@@ -229,6 +229,14 @@ let revealTimer,backTimer,retryTimer,openTimer,shown={gen:-1,i:-1,flipped:false}
 const nm=p=>(S&&S.names[p]||"").trim()||("Partner "+(p+1));
 const savedName=p=>store.get("soupname"+p)||DEFAULT_NAMES[p];
 const roomLink=()=>location.origin+location.pathname+"?room="+roomId;
+// Rooms this browser created, newest first, so several rooms can run at once (one per tab).
+const hostedRooms=()=>{const h=store.get("bsgs-hosts")||[],old=store.get("bsgs-host");return old&&!h.includes(old)?[old,...h]:h};
+const forgetRoom=r=>{store.set("bsgs-hosts",hostedRooms().filter(x=>x!==r));store.del("bsgs-host");store.del("bsgs-state-"+r)};
+function rememberRoom(r){
+  const h=[r,...hostedRooms().filter(x=>x!==r)];
+  for(const x of h.slice(20))store.del("bsgs-state-"+x); // drop the oldest so storage doesn't grow forever
+  store.set("bsgs-hosts",h.slice(0,20));store.del("bsgs-host");
+}
 const stateKey=()=>mode==="local"?"bsgs-local":mode==="host"?"bsgs-state-"+roomId:null;
 
 function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a}
@@ -470,7 +478,7 @@ async function copy(){
 $("create").onclick=()=>{
   roomId=newId();mode="host";me=0;S=null;
   S=fresh([savedName(0),savedName(1)]);
-  store.set("bsgs-host",roomId);store.set("bsgs-state-"+roomId,S);
+  rememberRoom(roomId);store.set("bsgs-state-"+roomId,S);
   history.replaceState(null,"","?room="+roomId);
   hostPeer();render();
 };
@@ -480,7 +488,7 @@ $("solo").onclick=()=>{
   render();
 };
 $("leave").onclick=()=>{
-  if(mode==="host"){store.del("bsgs-host");store.del("bsgs-state-"+roomId)}
+  if(mode==="host")forgetRoom(roomId);
   stopPeer();mode=null;me=null;S=null;roomId=null;shown={gen:-1,i:-1,flipped:false};
   history.replaceState(null,"",location.pathname);
   render();
@@ -502,7 +510,7 @@ document.addEventListener("visibilitychange",()=>{
 const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
 if(ROOM_RE.test(r)){
   roomId=r;
-  if(store.get("bsgs-host")===r){
+  if(hostedRooms().includes(r)){
     mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh([savedName(0),savedName(1)]);hostPeer();
   }else{mode="guest";me=1;guestPeer()}
 }
