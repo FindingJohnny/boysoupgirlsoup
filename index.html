@@ -5,88 +5,131 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Girl Soup, Boy Soup</title>
 <meta name="description" content="A two-player guessing game: is it a girl soup or a boy soup?">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14181e" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Girl Soup, Boy Soup">
+<meta property="og:title" content="Girl Soup, Boy Soup">
+<meta property="og:description" content="Come play with me! Twenty soups. Is each one a girl soup or a boy soup? Guess on your own phone and see who knows soup.">
+<meta property="og:url" content="https://findingjohnny.github.io/boysoupgirlsoup/">
+<meta property="og:image" content="https://findingjohnny.github.io/boysoupgirlsoup/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A soup bowl, half pink and half blue, with the words Girl Soup, Boy Soup">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Figtree:wght@400;600;800&family=DM+Mono:wght@500&display=swap">
 <style>
-/* Layout: one centered column — room bar, two scoreboards, flip card, one guess row per player. Diner-menu card on a porcelain-bowl ground. */
+/* Layout: header (logo + menu), then one centered column — room bar, two scoreboards, flip card, one guess row per player. Diner-menu card on a porcelain-bowl ground. */
 :root{
   --bg:#eef1f4; --card:#ffffff; --ink:#1d2430; --muted:#66707f; --line:#d6dce4;
   --girl:#d9577a; --girl-soft:#fbe3ea; --boy:#2f557f; --boy-soft:#dfe8f3;
-  --good:#2f8a55; --bad:#c2452d; --wait:#c08a1e;
+  --good:#2f8a55; --bad:#c2452d; --wait:#c08a1e; --broth:#f4c35a;
   --display:"Shrikhand",Georgia,serif; --body:"Figtree",system-ui,sans-serif; --mono:"DM Mono",ui-monospace,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#14181e; --card:#1f252e; --ink:#eef1f5; --muted:#9aa4b2; --line:#323a46;
-  --girl:#f07f9e; --girl-soft:#3a2229; --boy:#7fa7d6; --boy-soft:#1e2a3a; --good:#5cc086; --bad:#ef7a62; --wait:#e2b04a; color-scheme:dark}}
+  --girl:#f07f9e; --girl-soft:#3a2229; --boy:#7fa7d6; --boy-soft:#1e2a3a; --good:#5cc086; --bad:#ef7a62; --wait:#e2b04a; --broth:#e7b453; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#14181e; --card:#1f252e; --ink:#eef1f5; --muted:#9aa4b2; --line:#323a46;
-  --girl:#f07f9e; --girl-soft:#3a2229; --boy:#7fa7d6; --boy-soft:#1e2a3a; --good:#5cc086; --bad:#ef7a62; --wait:#e2b04a; color-scheme:dark}
+  --girl:#f07f9e; --girl-soft:#3a2229; --boy:#7fa7d6; --boy-soft:#1e2a3a; --good:#5cc086; --bad:#ef7a62; --wait:#e2b04a; --broth:#e7b453; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{min-height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-text-size-adjust:100%;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(20px,env(safe-area-inset-bottom,0px))}
+  padding-top:max(8px,env(safe-area-inset-top,0px));padding-bottom:max(16px,env(safe-area-inset-bottom,0px))}
 [hidden]{display:none!important}
-.wrap{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-section{display:flex;flex-direction:column;gap:16px}
-h1{font-family:var(--display);font-weight:400;font-size:2rem;line-height:1.05;margin:0;text-align:center;text-wrap:balance}
-h1 .g{color:var(--girl)} h1 .b{color:var(--boy)}
+.wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+section{display:flex;flex-direction:column;gap:12px}
+button{-webkit-tap-highlight-color:transparent}
 
-.home{text-align:center;padding:28px 20px;background:var(--card);border:2px solid var(--line);border-radius:22px;gap:12px}
-.home p{margin:0 0 8px;color:var(--muted);line-height:1.45}
+/* header: logo left, menu right. Wide screens show the menu inline; phones get a menu button and a dropdown. */
+.top{position:relative;max-width:720px;margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;
+  border-bottom:3px solid transparent;border-image:linear-gradient(90deg,var(--girl) 50%,var(--boy) 50%) 1}
+.brand{display:flex;align-items:center;gap:8px;margin:0;min-width:0;font-family:var(--display);font-weight:400;font-size:clamp(1.15rem,5.6vw,1.6rem);line-height:1;white-space:nowrap}
+.brand .g{color:var(--girl)} .brand .b{color:var(--boy)}
+.mark{width:1.9em;height:1.9em;flex:none}
+.menubtn{display:none;flex:none;width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;align-items:center;justify-content:center}
+.menubtn svg{width:22px;height:22px}
+.menubtn[aria-expanded="true"]{border-color:var(--ink)}
+.menu{display:flex;gap:4px}
+.mi{font:600 .95rem var(--body);color:var(--ink);background:transparent;border:0;border-radius:10px;min-height:44px;padding:0 12px;cursor:pointer;white-space:nowrap}
+.mi:hover{background:var(--card)}
+.mi.danger{color:var(--bad)}
+.mi:focus-visible,.menubtn:focus-visible,.player:focus-within{outline:3px solid var(--ink);outline-offset:2px}
+@media (max-width:759px){
+  .menubtn{display:inline-flex}
+  .menu{display:none;position:absolute;z-index:20;top:calc(100% + 6px);right:0;min-width:220px;flex-direction:column;gap:0;padding:6px;
+    background:var(--card);border:2px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(20,30,45,.18)}
+  .menu.open{display:flex}
+  .mi{text-align:left;min-height:48px;padding:0 14px}
+  .mi:hover{background:var(--bg)}
+}
 
-.room{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 8px 8px 12px;font-size:.9rem;font-weight:600}
-.room #status{flex:1;min-width:0}
+.home{text-align:center;align-items:center;padding:24px 20px;background:var(--card);border:2px solid var(--line);border-radius:22px;gap:12px}
+.home .hero{width:112px;height:112px}
+.home h2{font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.1;margin:0;text-wrap:balance}
+.home p{margin:0 0 4px;color:var(--muted);line-height:1.45}
+.home .btn{width:100%}
+
+.room{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:4px 4px 4px 12px;min-height:48px;font-size:.9rem;font-weight:600}
+.room #status{flex:1;min-width:0;padding-block:8px}
 .dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--wait)}
 .dot.on{background:var(--good)} .dot.err{background:var(--bad)}
-.btn.mini{padding:6px 12px;font-size:.85rem;border-radius:10px;background:var(--ink);color:var(--bg)}
+.btn.mini{padding:0 14px;min-height:40px;font-size:.85rem;border-radius:10px;background:var(--ink);color:var(--bg)}
 
 .players{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.player{min-width:0;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+/* The whole scoreboard is a label, so tapping anywhere on it edits the name. */
+.player{min-width:0;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:6px 12px 6px;cursor:text;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"tag sub" "name pts";align-items:center;column-gap:6px}
 .player.me{border-color:var(--ink)}
-.player .tag{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;min-height:1.1em}
-.player input{font:800 1rem var(--body);color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;width:100%;min-width:0}
-.player input[readonly]{border-bottom-color:transparent}
+.player .tag{grid-area:tag;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;min-height:1.1em}
+.player input{grid-area:name;font:800 .95rem var(--body);color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:6px 0;min-height:36px;width:100%;min-width:0}
+.player input[readonly]{border-bottom-color:transparent;cursor:default}
 .player input:focus{outline:none;border-bottom-color:var(--ink)}
-.player .pts{font-family:var(--mono);font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1.2}
-.player .sub{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.player .pts{grid-area:pts;font-family:var(--mono);font-size:1.5rem;font-variant-numeric:tabular-nums;line-height:1}
+.player .sub{grid-area:sub;justify-self:end;font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 
-.strip{text-align:center;font-family:var(--mono);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.scene{perspective:1100px}
-.card{position:relative;width:100%;aspect-ratio:5/4;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+.scene{perspective:1100px;position:relative}
+/* Card height gives way on short screens so the guess buttons and Next stay on screen. */
+.card{position:relative;width:100%;height:clamp(210px,calc(100svh - 470px),min(340px,80vw));transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1)}
 .card.flipped{transform:rotateY(180deg)}
+.count{position:absolute;z-index:2;top:12px;left:14px;font:500 .78rem var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 9px;pointer-events:none}
 .face{position:absolute;inset:0;border-radius:22px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;text-align:center;
   background:var(--card);border:2px solid var(--line);box-shadow:0 10px 30px rgba(20,30,45,.08)}
-.front .pic{width:38%;aspect-ratio:1;object-fit:cover;border-radius:50%;border:3px solid var(--line);background:var(--bg)}
+.front .pic{height:40%;width:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;border:3px solid var(--line);background:var(--bg)}
 .front .label{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.front .soup{font-family:var(--display);font-size:clamp(1.7rem,7vw,2.3rem);line-height:1.1;text-wrap:balance}
+.front .soup{font-family:var(--display);font-size:clamp(1.5rem,6.4vw,2.1rem);line-height:1.1;text-wrap:balance}
 .front .hint{font-size:.85rem;color:var(--muted)}
 .back{transform:rotateY(180deg)}
 .back.girl{background:var(--girl-soft);border-color:var(--girl)}
 .back.boy{background:var(--boy-soft);border-color:var(--boy)}
-.back .rank{font-family:var(--mono);font-size:3.2rem;line-height:1}
-.back .kind{font-family:var(--display);font-size:2rem}
+.back .rank{font-family:var(--mono);font-size:3rem;line-height:1}
+.back .kind{font-family:var(--display);font-size:1.9rem}
 .back.girl .rank,.back.girl .kind{color:var(--girl)}
 .back.boy .rank,.back.boy .kind{color:var(--boy)}
-.back .soupname{font-size:.95rem;color:var(--muted)}
+.back .soupname{font-size:.95rem;color:var(--muted);text-wrap:balance}
 .verdicts{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-weight:800;font-size:.9rem;min-height:1.2em}
 .ok{color:var(--good)} .no{color:var(--bad)} .skip{color:var(--muted)}
 
 .lobby{text-align:center;padding:20px;background:var(--card);border:2px dashed var(--ink);border-radius:22px;gap:10px}
 .lobby h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
 .lobby p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.4}
-.linkbox{font:500 .85rem var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;text-align:center}
+.linkbox{font:500 .85rem var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:44px;width:100%;text-align:center}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-.guesses{display:flex;flex-direction:column;gap:10px}
+.guesses{display:flex;flex-direction:column;gap:8px}
 .grow{display:grid;grid-template-columns:minmax(0,5.5em) 1fr 1fr;gap:8px;align-items:center}
 .grow .who{font-weight:800;font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.grow .wait{grid-column:span 2;text-align:center;border:2px dashed var(--line);border-radius:14px;padding:12px 8px;color:var(--muted);font-weight:600}
+.grow .wait{grid-column:span 2;text-align:center;border:2px dashed var(--line);border-radius:14px;padding:0 8px;min-height:50px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600}
 .grow .wait.in{border-style:solid;border-color:var(--good);color:var(--good)}
-button.btn{font:800 1rem var(--body);border-radius:14px;padding:14px 8px;cursor:pointer;border:2px solid transparent;transition:transform .1s,background .15s,color .15s}
+button.btn{font:800 1rem var(--body);border-radius:14px;padding:12px 8px;min-height:50px;cursor:pointer;border:2px solid transparent;transition:transform .1s,background .15s,color .15s}
 button.btn:active{transform:scale(.97)}
 button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .pick.girl{color:var(--girl);border-color:var(--girl);background:var(--card)}
@@ -95,19 +138,23 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .pick.boy.on{background:var(--boy);color:#fff}
 .pick:disabled{cursor:default}
 .btn.next{width:100%;background:var(--ink);color:var(--bg)}
-.btn.ghost{background:transparent;color:var(--muted);border-color:var(--line);font-weight:600;font-size:.9rem;padding:10px 14px}
+.btn.ghost{background:transparent;color:var(--muted);border-color:var(--line);font-weight:600;font-size:.95rem;min-height:46px;padding:10px 14px}
 .end{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;padding:28px 20px;background:var(--card);border:2px solid var(--line);border-radius:22px}
 .end .big{font-family:var(--display);font-size:2.4rem;line-height:1.1;text-wrap:balance;overflow-wrap:anywhere}
 .end p{margin:0;color:var(--muted)}
-.foot{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
-.ver{text-align:center;font-size:.72rem;color:var(--muted);line-height:1.6}
-.ver a,.more a,.results a{color:inherit}
-.more{display:flex;justify-content:center;gap:18px;font-weight:600;font-size:.9rem;color:var(--muted)}
+.ver{text-align:center;font-size:.72rem;color:var(--muted);line-height:1.6;margin-top:8px}
+.ver a,.results a{color:inherit}
+/* Small text links get a taller invisible hit area. */
+.ver a,.rl a{display:inline-block;padding:12px 2px;margin:-12px 0}
+.more{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.more a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:2px solid var(--line);background:var(--card);
+  color:var(--ink);font-weight:700;font-size:.88rem;text-decoration:none}
+.more a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .results{gap:0;background:var(--card);border:2px solid var(--line);border-radius:22px;overflow:hidden}
 .results h2{font-family:var(--display);font-weight:400;font-size:1.4rem;margin:0;padding:16px 16px 8px;text-align:center}
-.rhead,.rrow{display:grid;grid-template-columns:44px minmax(0,1fr) 4.2em 4.2em;gap:10px;align-items:center;padding:10px 14px}
+.rhead,.rrow{display:grid;grid-template-columns:44px minmax(0,1fr) 4.2rem 4.2rem;gap:10px;align-items:center;padding:10px 14px}
 .rhead{padding-block:4px 8px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.rhead span{overflow-wrap:anywhere;text-align:center;line-height:1.2}
+.rhead span{overflow-wrap:break-word;letter-spacing:.04em;text-align:center;line-height:1.2}
 .rrow{border-top:1px solid var(--line)}
 .rrow .thumb{width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--bg)}
 .rrow .rn{font-weight:800;font-size:.92rem;line-height:1.2}
@@ -115,41 +162,93 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .rrow .ra.girl{color:var(--girl)} .rrow .ra.boy{color:var(--boy)}
 .rrow .rl{font-size:.75rem;color:var(--muted);margin-top:2px}
 .rrow .rp{text-align:center;font-size:.82rem;font-weight:800}
+
+/* How to play: a bottom sheet on phones, a centered card on wide screens. */
+.sheet{width:min(460px,100%);max-height:85svh;margin:auto auto 0;padding:0;border:2px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;
+  background:var(--card);color:var(--ink);box-shadow:0 -10px 40px rgba(20,30,45,.2)}
+.sheet::backdrop{background:rgba(10,14,20,.45)}
+.sheet form{display:flex;flex-direction:column;gap:12px;padding:16px 20px max(20px,env(safe-area-inset-bottom,0px))}
+.sheet .head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sheet h2{font-family:var(--display);font-weight:400;font-size:1.6rem;margin:0}
+.sheet ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;line-height:1.45}
+.sheet li::marker{font-family:var(--mono);color:var(--muted)}
+.sheet p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.45}
+.sheet .g{color:var(--girl);font-weight:800} .sheet .b{color:var(--boy);font-weight:800}
+.x{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--ink);font-size:1.4rem;line-height:1;cursor:pointer}
+.x:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+@media (min-width:760px){.sheet{margin:auto;border-bottom:2px solid var(--line);border-radius:22px}}
+
+.toast{position:fixed;z-index:30;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);
+  background:var(--ink);color:var(--bg);font-weight:600;font-size:.9rem;padding:10px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(20,30,45,.25);overflow-wrap:anywhere}
+.toast:empty{display:none}
 @media (prefers-reduced-motion:reduce){.card{transition:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1><span class="g">Girl Soup</span>, <span class="b">Boy Soup</span></h1>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- The logo: a two-tone soup bowl with pink, gold and blue steam. Same drawing as assets/favicon.svg. -->
+  <symbol id="bowl" viewBox="0 0 64 64">
+    <g fill="none" stroke-width="3.4" stroke-linecap="round">
+      <path d="M21 25c-3.6-3.4 3.6-6.2 0-9.8s3.2-6 0-9.2" stroke="var(--girl)"/>
+      <path d="M32 23c-3.6-3.4 3.6-6.2 0-9.8s3.2-6 0-9.2" stroke="var(--broth)"/>
+      <path d="M43 25c-3.6-3.4 3.6-6.2 0-9.8s3.2-6 0-9.2" stroke="var(--boy)"/>
+    </g>
+    <path d="M32 34H5a27 22 0 0 0 27 22z" fill="var(--girl)"/>
+    <path d="M32 34h27a27 22 0 0 1-27 22z" fill="var(--boy)"/>
+    <path d="M14 43.5a20 15 0 0 0 7 6.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M5 34h54a27 22 0 0 1-54 0z" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linejoin="round"/>
+    <ellipse cx="32" cy="34" rx="27" ry="5.5" fill="var(--broth)" stroke="var(--ink)" stroke-width="2.6"/>
+    <path d="M23.5 56.5h17l-2.4 4.5h-12.2z" fill="var(--ink)"/>
+  </symbol>
+</svg>
 
+<header class="top">
+  <h1 class="brand"><svg class="mark" aria-hidden="true"><use href="#bowl"/></svg><span><span class="g">Girl Soup,</span> <span class="b">Boy Soup</span></span></h1>
+  <nav class="nav" id="nav" aria-label="Game menu" hidden>
+    <button class="menubtn" id="menubtn" aria-label="Menu" aria-expanded="false" aria-controls="menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+    <div class="menu" id="menu">
+      <button class="mi" id="newgame" aria-label="New game (opens a new room in a new tab)">New game</button>
+      <button class="mi" id="restart" aria-label="Restart: shuffle and deal new soups">Restart</button>
+      <button class="mi" id="invite" hidden>Invite</button>
+      <button class="mi" id="howto">How to play</button>
+      <button class="mi danger" id="leave">Leave</button>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
   <section class="home" id="home" hidden>
+    <svg class="hero" aria-hidden="true"><use href="#bowl"/></svg>
+    <h2>Is it a girl soup or a boy soup?</h2>
     <p>Twenty soups. Each of you guesses on your own phone, then the card flips and shows who got it right.</p>
     <button class="btn next" id="create">Create a room</button>
     <button class="btn ghost" id="solo">Play on one phone instead</button>
+    <button class="btn ghost" id="howto2">How to play</button>
   </section>
 
   <section id="play" hidden>
     <div class="room" id="room">
-      <span class="dot" id="dot"></span><span id="status"></span>
-      <button class="btn mini" id="invite" hidden>Invite</button>
+      <span class="dot" id="dot"></span><span id="status" role="status"></span>
       <button class="btn mini" id="retry" hidden>Retry</button>
     </div>
 
     <div id="board">
       <section>
         <div class="players">
-          <div class="player" id="pl0">
-            <div class="tag" id="tag0"></div>
-            <input id="name0" aria-label="Partner 1 name" maxlength="16">
-            <div class="pts" id="s0">0</div>
-            <div class="sub" id="c0">0 of 0 right</div>
-          </div>
-          <div class="player" id="pl1">
-            <div class="tag" id="tag1"></div>
-            <input id="name1" aria-label="Partner 2 name" maxlength="16">
-            <div class="pts" id="s1">0</div>
-            <div class="sub" id="c1">0 of 0 right</div>
-          </div>
+          <label class="player" id="pl0">
+            <span class="tag" id="tag0"></span>
+            <input id="name0" aria-label="Partner 1 name" maxlength="16" autocomplete="off">
+            <span class="pts" id="s0">0</span>
+            <span class="sub" id="c0">0 of 0 right</span>
+          </label>
+          <label class="player" id="pl1">
+            <span class="tag" id="tag1"></span>
+            <input id="name1" aria-label="Partner 2 name" maxlength="16" autocomplete="off">
+            <span class="pts" id="s1">0</span>
+            <span class="sub" id="c1">0 of 0 right</span>
+          </label>
         </div>
 
         <section class="lobby" id="lobby" hidden>
@@ -162,9 +261,8 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
           </div>
         </section>
 
-        <div class="strip">Card <span id="pos">1</span> of <span id="total">20</span></div>
-
         <div id="game" class="scene">
+          <div class="count" aria-label="Card number"><span id="pos">1</span> / <span id="total">20</span></div>
           <div class="card" id="card">
             <div class="face front">
               <img class="pic" id="pic" alt="" hidden>
@@ -188,19 +286,28 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 
         <div class="end" id="end" hidden><div class="big" id="endhead"></div><p id="endmsg"></p></div>
 
-
         <div class="guesses" id="actions"></div>
         <section class="results" id="results" hidden></section>
       </section>
     </div>
-
-    <div class="foot">
-      <button class="btn ghost" id="restart">Shuffle and restart</button>
-      <button class="btn ghost" id="leave">Leave</button>
-    </div>
   </section>
-  <div class="ver"><span id="ver"></span><br>Soup photos from <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> via Wikipedia</div>
-</div>
+  <footer class="ver"><span id="ver"></span><br>Soup photos from <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> via Wikipedia</footer>
+</main>
+
+<dialog class="sheet" id="help" aria-labelledby="helptitle">
+  <form method="dialog">
+    <div class="head"><h2 id="helptitle">How to play</h2><button class="x" value="close" aria-label="Close">×</button></div>
+    <ol>
+      <li>One of you creates a room and sends the link. The room lives in that tab, so keep it open while you play.</li>
+      <li>Each card is a soup. You each tap <span class="g">Girl</span> or <span class="b">Boy</span> on your own phone.</li>
+      <li>Once you've both picked, the card flips: the answer, and its rank on its side (#1 is the girliest or boyiest soup there is).</li>
+      <li>A point for every right guess. After twenty soups, the most points wins.</li>
+    </ol>
+    <p>Sitting together? Play on one phone. Tap a name on the scoreboard to change it.</p>
+    <button class="btn next" value="close">Got it</button>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
@@ -565,8 +672,9 @@ function stopPeer(){
 /* ---------- rendering ---------- */
 
 function render(){
-  $("home").hidden=!!mode;$("play").hidden=!mode;
-  if(!mode)return;
+  $("home").hidden=!!mode;$("play").hidden=!mode;$("nav").hidden=!mode;
+  if(!mode)return setMenu(false);
+  $("invite").hidden=mode!=="host";$("restart").hidden=!S;
   renderRoom();
   $("board").hidden=!S;
   if(!S)return;
@@ -656,7 +764,6 @@ function renderRoom(){
   else if(mode==="host")text=peer&&peer.open?"Room open. Waiting for your partner…":"Opening your room…";
   else text="Joining your partner's room…";
   $("status").textContent=text;$("dot").className="dot "+cls;
-  $("invite").hidden=mode!=="host";
   $("retry").hidden=!(mode==="guest"&&!connected);
 }
 
@@ -694,8 +801,8 @@ async function share(){
 }
 async function copy(){
   const b=$("copy");
-  try{await navigator.clipboard.writeText(roomLink());b.textContent="Copied!"}
-  catch(e){$("link").select();b.textContent="Select and copy"}
+  try{await navigator.clipboard.writeText(roomLink());b.textContent="Copied!";toast("Room link copied")}
+  catch(e){$("link").select();b.textContent="Select and copy";toast(roomLink())}
   setTimeout(()=>b.textContent="Copy",1800);
 }
 
@@ -719,6 +826,12 @@ $("leave").onclick=()=>{
   render();
 };
 $("restart").onclick=()=>send({t:"restart"});
+// A room only lives while its creator's tab is open, so a new game gets its own tab.
+$("newgame").onclick=()=>{
+  const u=location.pathname+"?new",w=open(u,"_blank");
+  if(w)w.opener=null;
+  else if(mode!=="host"||confirm("Your browser blocked the new tab. Start the new game here? This room closes until you come back to its link."))location.assign(u);
+};
 $("share").onclick=share;$("invite").onclick=share;$("copy").onclick=copy;
 $("retry").onclick=()=>{stopPeer();guestPeer();render()};
 
@@ -732,6 +845,35 @@ document.addEventListener("visibilitychange",()=>{
 
 // A photo that fails to load falls back to the plain card.
 $("pic").addEventListener("error",()=>{$("pic").hidden=true;$("label").hidden=false});
+
+/* ---------- menu, help, toast ---------- */
+
+function setMenu(open,refocus){
+  $("menu").classList.toggle("open",open);$("menubtn").setAttribute("aria-expanded",open);
+  if(open)$("menu").querySelector("button:not([hidden])").focus();
+  else if(refocus&&getComputedStyle($("menubtn")).display!=="none")$("menubtn").focus();
+}
+$("menubtn").onclick=()=>setMenu(!$("menu").classList.contains("open"));
+// Picking an item closes the dropdown; focus goes back to the menu button unless the help sheet took it.
+$("menu").addEventListener("click",e=>{if(e.target.closest("button"))setMenu(false,!$("help").open)});
+document.addEventListener("click",e=>{if(!$("nav").contains(e.target))setMenu(false)});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("menu").classList.contains("open")){e.preventDefault();setMenu(false,true)}});
+$("menu").addEventListener("keydown",e=>{ // arrow keys move through the dropdown
+  if(e.key!=="ArrowDown"&&e.key!=="ArrowUp")return;
+  const items=[...$("menu").querySelectorAll("button:not([hidden])")],k=items.indexOf(document.activeElement);
+  e.preventDefault();items[(k+(e.key==="ArrowDown"?1:items.length-1))%items.length].focus();
+});
+
+const help=()=>$("help").showModal();
+$("howto").onclick=help;$("howto2").onclick=help;
+$("help").addEventListener("click",e=>{if(e.target===$("help"))$("help").close()}); // tap on the backdrop
+$("help").addEventListener("close",()=>setTimeout(()=>{ // the menu item that opened it may be tucked away in the closed dropdown
+  const a=document.activeElement;
+  if(!a||a===document.body||$("help").contains(a))(!mode?$("howto2"):$("menubtn").offsetParent?$("menubtn"):$("howto")).focus();
+}));
+
+let toastTimer;
+function toast(t){$("toast").textContent=t;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").textContent="",2400)}
 
 /* ---------- updates ---------- */
 
@@ -755,8 +897,9 @@ if(!isNaN(built))$("ver").textContent="Updated "+built.toLocaleString([],{month:
 
 store.del("soupname0");store.del("soupname1"); // names saved by earlier versions
 
-const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
-if(ROOM_RE.test(r)){
+const q=new URLSearchParams(location.search),r=(q.get("room")||"").toLowerCase();
+if(q.has("new"))$("create").onclick(); // opened from New game
+else if(ROOM_RE.test(r)){
   roomId=r;
   if(hostedRooms().includes(r)){
     mode="host";me=0;S=valid(store.get("bsgs-state-"+r))||fresh(DEFAULT_NAMES.slice());hostPeer();
