@@ -428,9 +428,22 @@ const stateKey=()=>mode==="local"?"bsgs-local":mode==="host"?"bsgs-state-"+roomI
 function shuffle(a){a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a}
 function newId(){const r=crypto.getRandomValues(new Uint8Array(6));return Array.from(r,b=>ID_CHARS[b%ID_CHARS.length]).join("")}
 // The dealt cards travel in the game state, so both phones show the same soups even if one has an older copy of the page.
-function deal(){return shuffle(["girl","boy"].flatMap(k=>shuffle(SOUPS.filter(x=>x[1]===k)).slice(0,PER_SIDE)))}
+// Rematches deal soups this room hasn't played yet; a side only repeats once all of its soups have come up.
+function deal(seen){
+  return shuffle(["girl","boy"].flatMap(k=>{
+    const side=SOUPS.filter(x=>x[1]===k);
+    return shuffle(side.filter(x=>!seen.includes(x[0]))).concat(shuffle(side.filter(x=>seen.includes(x[0])))).slice(0,PER_SIDE);
+  }));
+}
+function startOver(seen){ // forget a side once it can't fill a game with unplayed soups
+  for(const k of ["girl","boy"]){
+    const side=SOUPS.filter(x=>x[1]===k).map(x=>x[0]);
+    if(side.filter(n=>!seen.includes(n)).length<PER_SIDE)seen=seen.filter(n=>!side.includes(n));
+  }
+  return seen;
+}
 const valid=g=>g&&Array.isArray(g.deck)&&g.deck.length?g:null;
-function fresh(names){return{deck:deal(),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
+function fresh(names){const seen=S&&S.seen||[];return{deck:deal(seen),seen:startOver(seen),i:0,picks:[null,null],right:[0,0],tries:[0,0],flipped:false,done:false,gen:S?S.gen+1:0,names}}
 
 /* ---------- game state (runs on the host, or on the single phone in local mode) ---------- */
 
@@ -454,6 +467,7 @@ function act(a){
 function reveal(){
   if(S.flipped)return;
   (S.log=S.log||[])[S.i]=S.picks.slice(); // for the results at the end
+  S.seen=S.seen||[];if(!S.seen.includes(S.deck[S.i][0]))S.seen.push(S.deck[S.i][0]);
   const kind=S.deck[S.i][1];
   for(const p of [0,1])if(S.picks[p]){S.tries[p]++;if(S.picks[p]===kind)S.right[p]++}
   S.flipped=true;
@@ -589,7 +603,9 @@ function render(){
     const [a,b]=S.right;
     $("endhead").textContent=a===b?"It's a tie":nm(a>b?0:1)+" wins";
     renderResults();
-    $("endmsg").textContent=a===b?"Equal soup wisdom. Settle it with a rematch.":"Final score "+Math.max(a,b)+" to "+Math.min(a,b)+".";
+    const left=SOUPS.filter(x=>!(S.seen||[]).includes(x[0])).length;
+    $("endmsg").textContent=(a===b?"Equal soup wisdom. Settle it with a rematch.":"Final score "+Math.max(a,b)+" to "+Math.min(a,b)+".")+
+      (left>=2*PER_SIDE?" "+left+" soups you haven't played yet.":" You've played almost every soup! The next games start mixing old ones back in.");
   }
 
   const waiting=mode!=="local"&&!connected;
@@ -646,7 +662,7 @@ function renderRoom(){
 
 function renderActions(){
   if(S.done){
-    $("actions").innerHTML='<button class="btn next" id="again">Rematch</button>';
+    $("actions").innerHTML='<button class="btn next" id="again">Rematch with new soups</button>';
     $("again").onclick=()=>send({t:"restart"});
     return;
   }
