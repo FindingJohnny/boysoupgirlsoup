@@ -99,6 +99,7 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .end .big{font-family:var(--display);font-size:2.4rem;line-height:1.1;text-wrap:balance;overflow-wrap:anywhere}
 .end p{margin:0;color:var(--muted)}
 .foot{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.ver{text-align:center;font-size:.72rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.card{transition:none}}
 </style>
 </head>
@@ -176,6 +177,7 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
       <button class="btn ghost" id="leave">Leave</button>
     </div>
   </section>
+  <div class="ver" id="ver"></div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -352,6 +354,7 @@ function connect(){
   });
   c.on("data",d=>{
     if(!d||d.t!=="state"||!d.s)return;
+    if(!Array.isArray(d.s.deck)){err="Your partner has an older version of the game. Ask them to reload the page.";render();return}
     S=d.s;
     if(document.activeElement!==$("name1"))store.set("soupname1",S.names[1]); // keep a rename from the host when rejoining
     render();
@@ -505,6 +508,24 @@ document.addEventListener("visibilitychange",()=>{
   else if(mode==="guest"&&!connected)connect();
 });
 
+/* ---------- updates ---------- */
+
+// GitHub Pages lets browsers reuse a saved copy for up to 10 minutes. If the live page is newer than this one, reload into it.
+async function checkForUpdate(){
+  try{
+    const res=await fetch(location.pathname,{method:"HEAD",cache:"no-store"});
+    const live=Date.parse(res.headers.get("last-modified")),mine=Date.parse(document.lastModified);
+    if(!(live>mine+1000))return;
+    const last=+sessionStorage.getItem("bsgs-reloaded")||0;
+    if(Date.now()-last<60000)return; // never get stuck reloading
+    sessionStorage.setItem("bsgs-reloaded",Date.now());
+    location.reload();
+  }catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!connected)checkForUpdate()});
+const built=new Date(document.lastModified);
+if(!isNaN(built))$("ver").textContent="Updated "+built.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+
 /* ---------- start ---------- */
 
 const r=(new URLSearchParams(location.search).get("room")||"").toLowerCase();
@@ -515,6 +536,7 @@ if(ROOM_RE.test(r)){
   }else{mode="guest";me=1;guestPeer()}
 }
 render();
+checkForUpdate();
 </script>
 </body>
 </html>
