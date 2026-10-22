@@ -48,7 +48,7 @@ section{display:flex;flex-direction:column;gap:12px}
 button{-webkit-tap-highlight-color:transparent}
 
 /* header: logo left, menu right. Wide screens show the menu inline; phones get a menu button and a dropdown. */
-.top{position:relative;max-width:720px;margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;
+.top{position:relative;max-width:960px;margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;
   border-bottom:3px solid transparent;border-image:linear-gradient(90deg,var(--girl) 50%,var(--boy) 50%) 1}
 .brand{display:flex;align-items:center;gap:8px;margin:0;min-width:0;font-family:var(--display);font-weight:400;font-size:clamp(1.15rem,5.6vw,1.6rem);line-height:1;white-space:nowrap}
 .brand .g{color:var(--girl)} .brand .b{color:var(--boy)}
@@ -61,7 +61,8 @@ button{-webkit-tap-highlight-color:transparent}
 .mi:hover{background:var(--card)}
 .mi.danger{color:var(--bad)}
 .mi:focus-visible,.menubtn:focus-visible,.player:focus-within{outline:3px solid var(--ink);outline-offset:2px}
-@media (max-width:759px){
+/* The inline menu needs about 900px next to the logo; below that, use the menu button so they never overlap. */
+@media (max-width:1023px){
   .menubtn{display:inline-flex}
   .menu{display:none;position:absolute;z-index:20;top:calc(100% + 6px);right:0;min-width:220px;flex-direction:column;gap:0;padding:6px;
     background:var(--card);border:2px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(20,30,45,.18)}
@@ -157,6 +158,8 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .rhead span{overflow-wrap:break-word;letter-spacing:.04em;text-align:center;line-height:1.2}
 .rrow{border-top:1px solid var(--line)}
 .rrow .thumb{width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--bg)}
+.rrow .thumb.ph{padding:8px}
+.results.nolog .rhead,.results.nolog .rrow{grid-template-columns:44px minmax(0,1fr)}
 .rrow .rn{font-weight:800;font-size:.92rem;line-height:1.2}
 .rrow .ra{font-size:.8rem;font-weight:600}
 .rrow .ra.girl{color:var(--girl)} .rrow .ra.boy{color:var(--boy)}
@@ -252,8 +255,8 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
         </div>
 
         <section class="lobby" id="lobby" hidden>
-          <h2>Invite your partner</h2>
-          <p>Send them this link. The game starts as soon as they open it. Keep this page open while you play.</p>
+          <h2 id="lobbyhead">Invite your partner</h2>
+          <p id="lobbymsg">Send them this link. The game starts as soon as they open it. Keep this page open while you play.</p>
           <input class="linkbox" id="link" readonly aria-label="Room link">
           <div class="two">
             <button class="btn next" id="share">Share link</button>
@@ -767,6 +770,10 @@ function render(){
 
   const waiting=mode!=="local"&&!connected;
   $("lobby").hidden=!(mode==="host"&&waiting);
+  const started=S.i>0||S.flipped||S.done; // they were here before, so this is a rejoin, not an invite
+  $("lobbyhead").textContent=started?"Waiting for your partner":"Invite your partner";
+  $("lobbymsg").textContent=started?"They've dropped out of the room. They can come back with this link and pick up where you left off.":
+    "Send them this link. The game starts as soon as they open it. Keep this page open while you play.";
   $("link").value=roomId?roomLink():"";
   $("actions").hidden=waiting;
   if(!waiting)renderActions();
@@ -780,13 +787,15 @@ const photo=e=>typeof e[4]==="string"&&/^https:\/\/(upload|thumb)\.wikimedia\.or
 function renderResults(){
   const pickCell=(e,g)=>!g?'<span class="rp skip">–</span>':
     '<span class="rp '+(g===e[1]?"ok":"no")+'">'+(g==="girl"?"Girl":"Boy")+(g===e[1]?" ✓":" ✗")+'</span>';
-  $("results").innerHTML='<h2>Every soup</h2><div class="rhead"><span></span><span></span><span>'+esc(nm(0))+'</span><span>'+esc(nm(1))+'</span></div>'+
+  const logged=(S.log||[]).some(Boolean); // games saved by older versions didn't record picks
+  $("results").classList.toggle("nolog",!logged);
+  $("results").innerHTML='<h2>Every soup</h2>'+(logged?'<div class="rhead"><span></span><span></span><span>'+esc(nm(0))+'</span><span>'+esc(nm(1))+'</span></div>':'')+
     S.deck.map((e,k)=>{
       const pk=(S.log||[])[k]||[null,null],img=photo(e),w=wikiUrl(e);
-      return '<div class="rrow">'+(img?'<img class="thumb" loading="lazy" alt="" onerror="this.style.visibility=\'hidden\'" src="'+esc(img)+'">':'<span class="thumb"></span>')+
+      return '<div class="rrow">'+(img?'<img class="thumb" loading="lazy" alt="" onerror="this.style.visibility=\'hidden\'" src="'+esc(img)+'">':'<svg class="thumb ph" aria-hidden="true"><use href="#bowl"/></svg>')+
         '<div><div class="rn">'+esc(e[0])+'</div><div class="ra '+e[1]+'">#'+e[2]+' '+(e[1]==="girl"?"Girl":"Boy")+' soup</div>'+
         '<div class="rl">'+(w?'<a href="'+esc(w)+'" target="_blank" rel="noopener">About</a> · ':'')+'<a href="'+esc(recipeUrl(e))+'" target="_blank" rel="noopener">Recipe</a></div></div>'+
-        pickCell(e,pk[0])+pickCell(e,pk[1])+'</div>';
+        (logged?pickCell(e,pk[0])+pickCell(e,pk[1]):'')+'</div>';
     }).join("");
 }
 
