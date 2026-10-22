@@ -814,7 +814,8 @@ function fillBack(){
 
 function renderRoom(){
   const online=mode!=="local";
-  $("room").hidden=!online;
+  // While the invite panel is up it already says we're waiting; the bar only returns for progress and errors.
+  $("room").hidden=!online||(mode==="host"&&!connected&&!err&&!!peer&&peer.open);
   if(!online)return;
   let text,cls="";
   if(connected){text="Playing with "+nm(1-me);cls="on"}
