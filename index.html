@@ -852,7 +852,7 @@ function renderActions(){
     $("again").onclick=()=>send({t:"restart"});
     return;
   }
-  const rows=mode==="local"?[0,1]:[me,1-me];
+  const rows=mode==="local"?[0,1]:[me,1-me],hadNext=!!$("nx");
   const btn=(p,g,mine)=>'<button class="btn pick '+g+(S.picks[p]===g&&(mine||S.flipped)?" on":"")+'" data-p="'+p+'" data-g="'+g+'"'+(S.flipped||!mine?" disabled":"")+'>'+(g==="girl"?"Girl":"Boy")+'</button>';
   $("actions").innerHTML=rows.map(p=>{
     const mine=mode==="local"||p===me,who='<span class="who">'+esc(nm(p))+'</span>';
@@ -860,7 +860,10 @@ function renderActions(){
     return '<div class="grow">'+who+'<span class="wait'+(S.picks[p]?' in':'')+'">'+(S.picks[p]?"Locked in ✓":"Thinking…")+'</span></div>';
   }).join("")+(S.flipped?'<button class="btn next" id="nx">'+(S.i===S.deck.length-1?"See who won":"Next soup")+'</button>':"");
   document.querySelectorAll(".pick:not(:disabled)").forEach(b=>b.onclick=()=>send({t:"pick",p:+b.dataset.p,g:b.dataset.g,i:S.i,gen:S.gen}));
-  if(S.flipped){$("nx").onclick=()=>send({t:"next",i:S.i,gen:S.gen});$("nx").focus({preventScroll:true})}
+  if(S.flipped){$("nx").onclick=()=>send({t:"next",i:S.i,gen:S.gen});
+    // Only when Next first appears, and never out from under someone typing a name.
+    if(!hadNext&&document.activeElement.tagName!=="INPUT")$("nx").focus({preventScroll:true});
+  }
 }
 
 /* ---------- controls ---------- */
