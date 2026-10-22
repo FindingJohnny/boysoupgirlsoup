@@ -61,8 +61,8 @@ button{-webkit-tap-highlight-color:transparent}
 .mi:hover{background:var(--card)}
 .mi.danger{color:var(--bad)}
 .mi:focus-visible,.menubtn:focus-visible,.player:focus-within{outline:3px solid var(--ink);outline-offset:2px}
-/* The inline menu needs about 900px next to the logo; below that, use the menu button so they never overlap. */
-@media (max-width:1023px){
+/* The inline menu needs about 860px next to the logo; below that, use the menu button so they never overlap. */
+@media (max-width:959px){
   .menubtn{display:inline-flex}
   .menu{display:none;position:absolute;z-index:20;top:calc(100% + 6px);right:0;min-width:220px;flex-direction:column;gap:0;padding:6px;
     background:var(--card);border:2px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(20,30,45,.18)}
@@ -185,7 +185,7 @@ button.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   background:var(--ink);color:var(--bg);font-weight:600;font-size:.9rem;padding:10px 16px;border-radius:12px;box-shadow:0 10px 30px rgba(20,30,45,.25);overflow-wrap:anywhere}
 .toast:empty{display:none}
 /* Desktop: a game table. The card on the left, everything you tap on the right; at the end the results list takes the left. */
-@media (min-width:1024px){
+@media (min-width:960px){
   .wrap,.top{max-width:1040px}
   .top{margin-bottom:24px}
   #play{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);grid-template-rows:repeat(7,auto) 1fr;column-gap:32px;row-gap:14px;align-items:start}
